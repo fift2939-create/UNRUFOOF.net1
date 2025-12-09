@@ -1,0 +1,18 @@
+window.SITE_DATA = {
+  "novels": [
+    {
+      "title": "عزيزي",
+      "description": "الات",
+      "driveLink": "",
+      "visible": true,
+      "coverImage": "",
+      "pdfFile": "/uploads/1765231788331-gul404n.pdf",
+      "id": "1765231788388",
+      "createdAt": 1765231788388
+    }
+  ],
+  "books": [],
+  "initiatives": [],
+  "jobs": [],
+  "partners": []
+};
