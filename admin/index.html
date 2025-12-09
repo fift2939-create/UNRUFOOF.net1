@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم - RUFOOF</title>
+    <link rel="stylesheet" href="./css/admin.css">
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, push, get, child, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // Expose to window for admin.js
+        window.firebase = { initializeApp, getDatabase, ref, set, push, get, child, remove, update };
+    </script>
+
+<body>
+    <!-- Login Section -->
+    <div id="login-section">
+        <div class="login-container">
+            <div class="login-box">
+                <div class="login-logo">RUFOOF</div>
+                <h2 class="login-title">لوحة التحكم</h2>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label class="form-label">اسم المستخدم</label>
+                        <input type="text" name="username" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">كلمة المرور</label>
+                        <input type="password" name="password" class="form-input" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">تسجيل الدخول</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <div id="dashboard-section" class="hidden">
+        <!-- Header -->
+        <header class="admin-header">
+            <div class="admin-logo">RUFOOF - لوحة التحكم</div>
+            <div class="admin-user">
+                <span>مرحباً، المدير</span>
+                <button id="logout-btn" class="logout-btn">تسجيل الخروج</button>
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <div class="dashboard-container">
+            <h1 class="dashboard-title">إدارة المحتوى</h1>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('novels')">الروايات</button>
+                <button class="tab-btn" onclick="switchTab('books')">الكتب</button>
+                <button class="tab-btn" onclick="switchTab('initiatives')">المبادرات</button>
+                <button class="tab-btn" onclick="switchTab('jobs')">الوظائف</button>
+                <button class="tab-btn" onclick="switchTab('partners')">الشركاء</button>
+            </div>
+
+            <!-- Novels Tab -->
+            <div id="novels-tab" class="tab-content active">
+                <div class="admin-form">
+                    <h3 style="margin-bottom: 1.5rem;">إضافة رواية جديدة</h3>
+                    <form id="novel-form">
+                        <div class="form-group">
+                            <label class="form-label">عنوان الرواية</label>
+                            <input type="text" name="novelTitle" class="form-input" required
+                                placeholder="أدخل عنوان الرواية">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">وصف الرواية</label>
+                            <textarea name="novelDescription" class="form-textarea" required
+                                placeholder="أدخل وصف الرواية"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">صورة الغلاف</label>
+                            <div class="file-input-wrapper">
+                                <label for="novelCover" class="file-input-label">
+                                    📷 اختر صورة الغلاف
+                                </label>
+                                <input type="file" id="novelCover" name="novelCover" class="file-input" accept="image/*"
+                                    onchange="updateFileName(this, 'cover-name')">
+                            </div>
+                            <div id="cover-name" class="file-name"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">ملف PDF</label>
+                            <div class="file-input-wrapper">
+                                <label for="novelPdf" class="file-input-label">
+                                    📄 اختر ملف PDF
+                                </label>
+                                <input type="file" id="novelPdf" name="novelPdf" class="file-input" accept=".pdf"
+                                    onchange="updateFileName(this, 'pdf-name')">
+                            </div>
+                            <div id="pdf-name" class="file-name"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">رابط Google Drive (اختياري)</label>
+                            <input type="url" name="novelDriveLink" class="form-input"
+                                placeholder="https://drive.google.com/file/d/...">
+                            <small
+                                style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.5rem; display: block;">💡
+                                يمكنك إضافة رابط Google Drive كبديل لرفع الملف</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label"
+                                style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                <input type="checkbox" name="novelVisible" checked style="width: auto;">
+                                <span>عرض على الموقع (Visible)</span>
+                            </label>
+                            <small style="color: var(--text-secondary);">إذا لم يتم التحديد، سيظهر العنصر في لوحة التحكم
+                                فقط.</small>
+                        </div>
+
+                        <button type="submit" class="btn btn-success">نشر الرواية</button>
+                    </form>
+                </div>
+
+                <div class="content-list">
+                    <h3 style="margin-bottom: 1.5rem;">الروايات المنشورة</h3>
+                    <div id="novels-list"></div>
+                </div>
+            </div>
+
+            <!-- Books Tab -->
+            <div id="books-tab" class="tab-content">
+                <div class="admin-form">
+                    <h3 style="margin-bottom: 1.5rem;">إضافة كتاب جديد</h3>
+                    <form id="book-form">
+                        <div class="form-group">
+                            <label class="form-label">عنوان الكتاب</label>
+                            <input type="text" name="bookTitle" class="form-input" required
+                                placeholder="أدخل عنوان الكتاب">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">اسم المؤلف</label>
+                            <input type="text" name="bookAuthor" class="form-input" required
+                                placeholder="أدخل اسم المؤلف">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">وصف الكتاب</label>
+                            <textarea name="bookDescription" class="form-textarea" required
+                                placeholder="أدخل وصف الكتاب"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">التصنيف</label>
+                            <input type="text" name="bookCategory" class="form-input"
+                                placeholder="مثال: أدب، علوم، تاريخ">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">سنة النشر</label>
+                            <input type="text" name="bookYear" class="form-input" placeholder="2025">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">صورة الغلاف</label>
+                            <div class="file-input-wrapper">
+                                <label for="bookCover" class="file-input-label">
+                                    📷 اختر صورة الغلاف
+                                </label>
+                                <input type="file" id="bookCover" name="bookCover" class="file-input" accept="image/*"
+                                    onchange="updateFileName(this, 'book-cover-name')">
+                            </div>
+                            <div id="book-cover-name" class="file-name"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">ملف PDF</label>
+                            <div class="file-input-wrapper">
+                                <label for="bookPdf" class="file-input-label">
+                                    📄 اختر ملف PDF
+                                </label>
+                                <input type="file" id="bookPdf" name="bookPdf" class="file-input" accept=".pdf"
+                                    onchange="updateFileName(this, 'book-pdf-name')">
+                            </div>
+                            <div id="book-pdf-name" class="file-name"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">رابط Google Drive (اختياري)</label>
+                            <input type="url" name="bookDriveLink" class="form-input"
+                                placeholder="https://drive.google.com/file/d/...">
+                            <small
+                                style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.5rem; display: block;">💡
+                                يمكنك إضافة رابط Google Drive كبديل لرفع الملف</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label"
+                                style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                <input type="checkbox" name="bookVisible" checked style="width: auto;">
+                                <span>عرض على الموقع (Visible)</span>
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-success">نشر الكتاب</button>
+                    </form>
+                </div>
+
+                <div class="content-list">
+                    <h3 style="margin-bottom: 1.5rem;">الكتب المنشورة</h3>
+                    <div id="books-list"></div>
+                </div>
+            </div>
+
+            <!-- Initiatives Tab -->
+            <div id="initiatives-tab" class="tab-content">
+                <div class="admin-form">
+                    <h3 style="margin-bottom: 1.5rem;">إضافة مبادرة جديدة</h3>
+                    <form id="initiative-form">
+                        <div class="form-group">
+                            <label class="form-label">اسم المبادرة</label>
+                            <input type="text" name="initiativeName" class="form-input" required
+                                placeholder="أدخل اسم المبادرة">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">وصف المبادرة</label>
+                            <textarea name="initiativeDescription" class="form-textarea" required
+                                placeholder="أدخل وصف المبادرة"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">صورة المبادرة</label>
+                            <div class="file-input-wrapper">
+                                <label for="initiativeImage" class="file-input-label">
+                                    📷 اختر صورة المبادرة
+                                </label>
+                                <input type="file" id="initiativeImage" name="initiativeImage" class="file-input"
+                                    accept="image/*" onchange="updateFileName(this, 'initiative-image-name')">
+                            </div>
+                            <div id="initiative-image-name" class="file-name"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label"
+                                style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                <input type="checkbox" name="initiativeVisible" checked style="width: auto;">
+                                <span>عرض على الموقع (Visible)</span>
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-success">نشر المبادرة</button>
+                    </form>
+                </div>
+
+                <div class="content-list">
+                    <h3 style="margin-bottom: 1.5rem;">المبادرات المنشورة</h3>
+                    <div id="initiatives-list"></div>
+                </div>
+            </div>
+
+            <!-- Jobs Tab -->
+            <div id="jobs-tab" class="tab-content">
+                <div class="admin-form">
+                    <h3 style="margin-bottom: 1.5rem;">إضافة وظيفة جديدة</h3>
+                    <form id="job-form">
+                        <div class="form-group">
+                            <label class="form-label">نوع الوظيفة</label>
+                            <input type="text" name="jobType" class="form-input" required placeholder="مثال: مطور ويب">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">تاريخ النشر</label>
+                            <input type="date" name="jobPostDate" class="form-input" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">تاريخ الانتهاء</label>
+                            <input type="date" name="jobExpiryDate" class="form-input" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">الحالة</label>
+                            <select name="jobStatus" class="form-select" required>
+                                <option value="متاحة">متاحة</option>
+                                <option value="منتهية">منتهية</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label"
+                                style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                <input type="checkbox" name="jobVisible" checked style="width: auto;">
+                                <span>عرض على الموقع (Visible)</span>
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-success">نشر الوظيفة</button>
+                    </form>
+                </div>
+
+                <div class="content-list">
+                    <h3 style="margin-bottom: 1.5rem;">الوظائف المنشورة</h3>
+                    <div id="jobs-list"></div>
+                </div>
+            </div>
+
+            <!-- Partners Tab -->
+            <div id="partners-tab" class="tab-content">
+                <div class="admin-form">
+                    <h3 style="margin-bottom: 1.5rem;">إضافة شريك جديد</h3>
+                    <form id="partner-form">
+                        <div class="form-group">
+                            <label class="form-label">اسم الشريك</label>
+                            <input type="text" name="partnerName" class="form-input" required
+                                placeholder="أدخل اسم الشريك">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">وصف الشريك</label>
+                            <textarea name="partnerDescription" class="form-textarea" required
+                                placeholder="أدخل وصف الشريك"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">الموقع الإلكتروني (اختياري)</label>
+                            <input type="url" name="partnerWebsite" class="form-input"
+                                placeholder="https://example.com">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">شعار الشريك</label>
+                            <div class="file-input-wrapper">
+                                <label for="partnerLogo" class="file-input-label">
+                                    🏢 اختر شعار الشريك
+                                </label>
+                                <input type="file" id="partnerLogo" name="partnerLogo" class="file-input"
+                                    accept="image/*" onchange="updateFileName(this, 'partner-logo-name')">
+                            </div>
+                            <div id="partner-logo-name" class="file-name"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label"
+                                style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                <input type="checkbox" name="partnerVisible" checked style="width: auto;">
+                                <span>عرض على الموقع (Visible)</span>
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-success">إضافة الشريك</button>
+                    </form>
+                </div>
+
+                <div class="content-list">
+                    <h3 style="margin-bottom: 1.5rem;">الشركاء الحاليون</h3>
+                    <div id="partners-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="./js/admin.js"></script>
+</body>
+
+</html>

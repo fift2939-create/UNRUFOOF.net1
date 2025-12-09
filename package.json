@@ -1,0 +1,25 @@
+{
+    "name": "rufoof-website",
+    "version": "1.0.0",
+    "description": "RUFOOF - منصة تصفح الكتب والمبادرات الشبابية",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js",
+        "dev": "node server.js",
+        "build": "node build.js"
+    },
+    "keywords": [
+        "rufoof",
+        "books",
+        "novels",
+        "initiatives",
+        "jobs"
+    ],
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "cors": "^2.8.5",
+        "express": "^4.18.2",
+        "multer": "^1.4.5-lts.1"
+    }
+}
